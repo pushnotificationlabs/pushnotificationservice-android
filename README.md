@@ -9,15 +9,10 @@ only ever receives plain strings from it.
 
 ## Install
 
-**Not yet published to Maven Central** — the coordinate below isn't resolvable
-yet (a Sonatype OSSRH account still needs to be provisioned before the first
-real `./gradlew publish`). Source and tests are complete and CI-verified; this
-section will drop the caveat once the first release actually publishes.
-
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("com.pushnotificationservice:android-sdk:0.1.0")
+    implementation("com.pushnotificationservice:android-sdk:0.1.2")
 }
 ```
 
