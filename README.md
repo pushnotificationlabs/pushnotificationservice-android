@@ -1,11 +1,18 @@
 # PushNotificationService Android SDK
 
+[![Test](https://github.com/pushnotificationlabs/pushnotificationservice-android/actions/workflows/test.yml/badge.svg)](https://github.com/pushnotificationlabs/pushnotificationservice-android/actions/workflows/test.yml)
+
 Kotlin library wrapping PushNotificationService.com's native device-token
 REST API. Min SDK 23. No bundled networking/JSON/Firebase dependency — you
 already have Firebase Messaging in your app to obtain the token; this SDK
 only ever receives plain strings from it.
 
 ## Install
+
+**Not yet published to Maven Central** — the coordinate below isn't resolvable
+yet (a Sonatype OSSRH account still needs to be provisioned before the first
+real `./gradlew publish`). Source and tests are complete and CI-verified; this
+section will drop the caveat once the first release actually publishes.
 
 ```kotlin
 // build.gradle.kts
