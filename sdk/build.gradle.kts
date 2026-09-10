@@ -1,8 +1,7 @@
 plugins {
     id("com.android.library")
     kotlin("android")
-    id("maven-publish")
-    id("signing")
+    id("com.vanniktech.maven.publish")
 }
 
 android {
@@ -26,9 +25,10 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
 
-    publishing {
-        singleVariant("release")
-    }
+    // No android.publishing.singleVariant("release") here: the
+    // com.vanniktech.maven.publish plugin's AndroidSingleVariantLibrary
+    // component registers the "release" variant itself. Declaring both
+    // throws "Using singleVariant publishing DSL multiple times."
 }
 
 dependencies {
@@ -44,45 +44,40 @@ dependencies {
     testImplementation("org.json:json:20240303")
 }
 
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            groupId = "com.pushnotificationservice"
-            artifactId = "android-sdk"
-            version = project.findProperty("sdkVersion") as? String ?: "0.1.0"
+// Credentials/signing key are read by convention from Gradle properties or
+// ORG_GRADLE_PROJECT_-prefixed env vars — mavenCentralUsername/Password
+// (a Central Portal user token, NOT your account login) and
+// signingInMemoryKey/KeyId/KeyPassword — so nothing here references
+// System.getenv() directly; the plugin wires that up itself. Locally,
+// running ./gradlew publish without these set fails loudly rather than
+// silently publishing unsigned.
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
 
-            afterEvaluate { from(components["release"]) }
+    coordinates("com.pushnotificationservice", "android-sdk", project.findProperty("sdkVersion") as? String ?: "0.1.0")
 
-            pom {
-                name.set("PushNotificationService Android SDK")
-                description.set("Client SDK for PushNotificationService.com native device-token registration and notification handling.")
-                url.set("https://github.com/pushnotificationlabs/pushnotificationservice-android")
-                licenses {
-                    license {
-                        name.set("MIT")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
+    pom {
+        name.set("PushNotificationService Android SDK")
+        description.set("Client SDK for PushNotificationService.com native device-token registration and notification handling.")
+        url.set("https://github.com/pushnotificationlabs/pushnotificationservice-android")
+        licenses {
+            license {
+                name.set("MIT")
+                url.set("https://opensource.org/licenses/MIT")
             }
         }
-    }
-    repositories {
-        maven {
-            name = "sonatype"
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                username = (project.findProperty("ossrhUsername") as? String) ?: System.getenv("OSSRH_USERNAME")
-                password = (project.findProperty("ossrhPassword") as? String) ?: System.getenv("OSSRH_PASSWORD")
+        developers {
+            developer {
+                id.set("pushnotificationlabs")
+                name.set("PushNotificationService.com")
+                email.set("hello@pushnotificationservice.com")
             }
         }
-    }
-}
-
-signing {
-    val signingKey = System.getenv("GPG_SIGNING_KEY")
-    val signingPassword = System.getenv("GPG_SIGNING_PASSWORD")
-    if (signingKey != null && signingPassword != null) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications["release"])
+        scm {
+            connection.set("scm:git:https://github.com/pushnotificationlabs/pushnotificationservice-android.git")
+            developerConnection.set("scm:git:https://github.com/pushnotificationlabs/pushnotificationservice-android.git")
+            url.set("https://github.com/pushnotificationlabs/pushnotificationservice-android")
+        }
     }
 }

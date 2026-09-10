@@ -1,0 +1,57 @@
+name: Publish to Maven Central
+
+# Deliberately NOT triggered on push/tag — publishing to Maven Central is
+# irreversible (a version, once published, can never be re-uploaded or
+# deleted, only deprecated) and must never happen automatically. This is
+# workflow_dispatch-only: a human explicitly runs it, from the Actions tab,
+# after review — same posture as a release button, not a CI check.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "publish" to confirm — this cannot be undone'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify confirmation input
+        env:
+          CONFIRM_INPUT: ${{ github.event.inputs.confirm }}
+        run: |
+          if [ "$CONFIRM_INPUT" != "publish" ]; then
+            echo "Confirmation input did not match 'publish' — aborting." >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Run tests before publishing
+        run: ./gradlew :sdk:testDebugUnitTest --rerun
+
+      # Credentials/signing key come from repo secrets, read by the
+      # com.vanniktech.maven.publish plugin via these exact
+      # ORG_GRADLE_PROJECT_-prefixed env var names (its own convention —
+      # do not rename without also updating sdk/build.gradle.kts's
+      # expectations). MAVEN_CENTRAL_USERNAME/PASSWORD are a Central Portal
+      # *user token* (Account → Generate User Token), not your account
+      # login. SIGNING_KEY/SIGNING_KEY_ID/SIGNING_KEY_PASSWORD are already
+      # set (see the repo's Settings → Secrets); MAVEN_CENTRAL_USERNAME/
+      # PASSWORD still need to be added the same way before this can
+      # actually run — see the Android SDK plan doc's Maven Central section
+      # for the full walkthrough.
+      - name: Publish to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: ./gradlew :sdk:publishToMavenCentral --no-configuration-cache
